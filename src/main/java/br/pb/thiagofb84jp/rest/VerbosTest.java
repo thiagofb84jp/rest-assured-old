@@ -81,6 +81,30 @@ public class VerbosTest {
     }
 
     @Test
+    public void deveDeserializarObjetoAoSalvarUsuario() {
+        User user = new User(name, age);
+
+        User insertedUser  = given()
+                                  .log().all()
+                                  .contentType(ContentType.JSON)
+                                  .body(user)
+                             .when()
+                                  .post("https://restapi.wcaquino.me/users")
+                             .then()
+                                  .log().all()
+                                  .statusCode(201)
+                             .and()
+                                  .extract().body().as(User.class)
+                             ;
+
+        System.out.println(insertedUser);
+
+        Assert.assertThat(insertedUser.getId(), notNullValue());
+        Assert.assertEquals(name, insertedUser.getName());
+        Assert.assertThat(insertedUser.getAge(), is(user.getAge()));
+    }
+
+    @Test
     public void deveDesearializarObjetoAoSalvarUsuario() {
         User user = new User(name, age);
 
@@ -138,6 +162,26 @@ public class VerbosTest {
              .body("user.age", is(Integer.toString(age)))
         ;
     }
+
+//    @Test
+//    public void deveSalvarUsuarioViaXMLUsandoObjeto() {
+//        User user = new User(name, age);
+//
+//        given()
+//             .log().all()
+//             .contentType(ContentType.XML)
+//             .body(user)
+//        .when()
+//             .post("https://restapi.wcaquino.me/usersXML")
+//        .then()
+//             .log().all()
+//             .statusCode(201)
+//        .and()
+//             .body("user.@id", is(notNullValue()))
+//             .body("user.name", is(name))
+//             .body("user.age", is(Integer.toString(age)))
+//        ;
+//    }
 
     @Test
     public void deveAlterarUsuario() {
