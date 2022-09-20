@@ -1,11 +1,14 @@
 package br.pb.thiagofb84jp.rest.tests;
 
 import br.pb.thiagofb84jp.rest.core.BaseTest;
+import br.pb.thiagofb84jp.rest.utils.DataUtils;
 import com.github.javafaker.Faker;
 import io.restassured.RestAssured;
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -18,9 +21,14 @@ import java.util.regex.Matcher;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BarrigaTest extends BaseTest {
 
     private String TOKEN;
+
+    private static String CONTA_NAME = "Conta " + System.nanoTime();
+
+    private static Integer CONTA_ID;
 
     @Before
     public void login() {
@@ -39,7 +47,7 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void naoDeveAcessarAPISemToken() {
+    public void t01_naoDeveAcessarAPISemToken() {
         given()
         .when()
              .get("/contas")
@@ -49,27 +57,27 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void deveIncluirContaComSucesso() {
-        Faker faker = new Faker();
-        int number = faker.number().numberBetween(1, 500);
-
-        given()
-             .header("Authorization", "JWT " + TOKEN)
-             .body("{\"nome\": \"Conta " +  number +"\"}")
-        .when()
-             .post("/contas")
-        .then()
-             .statusCode(201)
+    public void t02_deveIncluirContaComSucesso() {
+        CONTA_ID = given()
+                        .header("Authorization", "JWT " + TOKEN)
+                        .body("{\"nome\": \""+ CONTA_NAME +"\"}")
+                   .when()
+                        .post("/contas")
+                   .then()
+                        .statusCode(201)
+                   .and()
+                        .extract().path("id")
         ;
     }
 
     @Test
-    public void deveAlterarContaComSucesso() {
+    public void t03_deveAlterarContaComSucesso() {
         given()
              .header("Authorization", "JWT " + TOKEN)
-             .body("{\"nome\": \"Conta alterada\"}")
+             .body("{\"nome\": \""+ CONTA_NAME +" alterada\"}")
+             .pathParam("id", CONTA_ID)
         .when()
-             .put("/contas/1381328")
+             .put("/contas/{id}")
         .then()
              .statusCode(200)
         .and()
@@ -78,10 +86,10 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void naoDeveInserirContaMesmoNome() {
+    public void t04_naoDeveInserirContaMesmoNome() {
         given()
              .header("Authorization", "JWT " + TOKEN)
-             .body("{\"nome\": \"Conta alterada\"}")
+             .body("{\"nome\": \""+ CONTA_NAME +"  alterada\"}")
         .when()
              .post("/contas")
         .then()
@@ -92,7 +100,7 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void deveInserirMovimentacaoComSucesso() {
+    public void t05_deveInserirMovimentacaoComSucesso() {
         Movimentacao mov = getMovimentacaoValida();
 
         given()
@@ -106,7 +114,7 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void deveValidarCamposObrigatoriosMovimentacao() {
+    public void t06_deveValidarCamposObrigatoriosMovimentacao() {
         given()
              .header("Authorization", "JWT " + TOKEN)
              .body("{}")
@@ -130,9 +138,9 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void deveInserirMovimentacaoComDataFutura() {
+    public void t07_deveInserirMovimentacaoComDataFutura() {
         Movimentacao mov = getMovimentacaoValida();
-        mov.setData_transacao(getFutureDate());
+        mov.setData_transacao(DataUtils.getDataDiferencaDias(2));
 
         given()
              .header("Authorization", "JWT " + TOKEN)
@@ -147,50 +155,61 @@ public class BarrigaTest extends BaseTest {
         ;
     }
 
+    @Test
+    public void t08_naoDeveRemoverContaComMovimentacao() {
+        given()
+             .header("Authorization", "JWT " + TOKEN)
+             .pathParam("id", CONTA_ID)
+        .when()
+             .delete("/contas/{id}")
+        .then()
+             .statusCode(500)
+        .and()
+             .body("constraint", is("transacoes_conta_id_foreign"))
+        ;
+    }
+
+    @Test
+    public void t09_deveCalcularSaldoContas() {
+        given()
+             .header("Authorization", "JWT " + TOKEN)
+        .when()
+             .get("/saldo")
+        .then()
+             .statusCode(200)
+        .and()
+             .body("find{it.conta_id == 1381328}.saldo", is("300.00"))
+        ;
+    }
+
+    @Test
+    public void t10_deveRemoverMovimentacao() {
+        given()
+             .header("Authorization", "JWT " + TOKEN)
+        .when()
+             .delete("/transacoes/1293357")
+        .then()
+             .statusCode(204)
+        ;
+    }
+
     /*
     *   Generating mass of data
      */
     private Movimentacao getMovimentacaoValida() {
         Movimentacao mov = new Movimentacao();
 
-        mov.setConta_id(1381328);
+        mov.setConta_id(CONTA_ID);
 //        mov.setUsuarioId();
         mov.setDescricao("Descrição da movimentação");
         mov.setEnvolvido("Envolvido na mov");
         mov.setTipo("REC");
-        mov.setData_transacao(getPreviousDate());
-        mov.setData_pagamento(getCurrentDate());
+        mov.setData_transacao(DataUtils.getDataDiferencaDias(-1));
+        mov.setData_pagamento(DataUtils.getDataDiferencaDias(5));
         mov.setValor(100F);
         mov.setStatus(true);
 
         return mov;
-    }
-
-    private String getCurrentDate() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String currentDate = dateFormat.format(new Date());
-
-        return currentDate;
-    }
-
-    private String getPreviousDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DATE, -1);
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String futureDate = dateFormat.format(new Date((calendar.getTimeInMillis())));
-
-        return futureDate;
-    }
-
-    private String getFutureDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DATE, +1);
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String futureDate = dateFormat.format(new Date((calendar.getTimeInMillis())));
-
-        return futureDate;
     }
 
 }
