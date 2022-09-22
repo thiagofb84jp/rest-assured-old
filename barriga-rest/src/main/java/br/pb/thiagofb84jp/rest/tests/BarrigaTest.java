@@ -4,10 +4,13 @@ import br.pb.thiagofb84jp.rest.core.BaseTest;
 import br.pb.thiagofb84jp.rest.utils.DataUtils;
 import com.github.javafaker.Faker;
 import io.restassured.RestAssured;
+import io.restassured.specification.FilterableRequestSpecification;
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.manipulation.Filterable;
 import org.junit.runners.MethodSorters;
 
 import java.text.SimpleDateFormat;
@@ -24,14 +27,13 @@ import static org.hamcrest.Matchers.*;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BarrigaTest extends BaseTest {
 
-    private String TOKEN;
-
+    private static String TOKEN;
     private static String CONTA_NAME = "Conta " + System.nanoTime();
-
     private static Integer CONTA_ID;
+    private static Integer MOV_ID;
 
-    @Before
-    public void login() {
+    @BeforeClass
+    public static void login() {
         Map<String, String> login = new HashMap<>();
         login.put("email", "thiago.ferreira@gmail.com");
         login.put("senha", "abcd_123");
@@ -43,23 +45,14 @@ public class BarrigaTest extends BaseTest {
                 .then()
                      .statusCode(200)
                      .extract().path("token")
-                ;
-    }
-
-    @Test
-    public void t01_naoDeveAcessarAPISemToken() {
-        given()
-        .when()
-             .get("/contas")
-        .then()
-             .statusCode(401)
         ;
+
+        requestSpecification.header("Authorization", "JWT " + TOKEN);
     }
 
     @Test
-    public void t02_deveIncluirContaComSucesso() {
+    public void t01_deveIncluirContaComSucesso() {
         CONTA_ID = given()
-                        .header("Authorization", "JWT " + TOKEN)
                         .body("{\"nome\": \""+ CONTA_NAME +"\"}")
                    .when()
                         .post("/contas")
@@ -71,9 +64,8 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t03_deveAlterarContaComSucesso() {
+    public void t02_deveAlterarContaComSucesso() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
              .body("{\"nome\": \""+ CONTA_NAME +" alterada\"}")
              .pathParam("id", CONTA_ID)
         .when()
@@ -81,15 +73,14 @@ public class BarrigaTest extends BaseTest {
         .then()
              .statusCode(200)
         .and()
-             .body("nome", is("Conta alterada"))
+             .body("nome", is(CONTA_NAME +" alterada"))
         ;
     }
 
     @Test
-    public void t04_naoDeveInserirContaMesmoNome() {
+    public void t03_naoDeveInserirContaMesmoNome() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
-             .body("{\"nome\": \""+ CONTA_NAME +"  alterada\"}")
+             .body("{\"nome\": \""+ CONTA_NAME +" alterada\"}")
         .when()
              .post("/contas")
         .then()
@@ -100,23 +91,22 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t05_deveInserirMovimentacaoComSucesso() {
+    public void t04_deveInserirMovimentacaoComSucesso() {
         Movimentacao mov = getMovimentacaoValida();
 
-        given()
-             .header("Authorization", "JWT " + TOKEN)
-             .body(mov)
-        .when()
-             .post("/transacoes")
-        .then()
-             .statusCode(201)
+        MOV_ID = given()
+                      .body(mov)
+                 .when()
+                      .post("/transacoes")
+                 .then()
+                      .statusCode(201)
+                      .extract().path("id")
         ;
     }
 
     @Test
-    public void t06_deveValidarCamposObrigatoriosMovimentacao() {
+    public void t05_deveValidarCamposObrigatoriosMovimentacao() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
              .body("{}")
         .when()
              .post("/transacoes")
@@ -138,12 +128,11 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t07_deveInserirMovimentacaoComDataFutura() {
+    public void t06_deveInserirMovimentacaoComDataFutura() {
         Movimentacao mov = getMovimentacaoValida();
         mov.setData_transacao(DataUtils.getDataDiferencaDias(2));
 
         given()
-             .header("Authorization", "JWT " + TOKEN)
              .body(mov)
         .when()
              .post("/transacoes")
@@ -156,9 +145,8 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t08_naoDeveRemoverContaComMovimentacao() {
+    public void t07_naoDeveRemoverContaComMovimentacao() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
              .pathParam("id", CONTA_ID)
         .when()
              .delete("/contas/{id}")
@@ -170,26 +158,39 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t09_deveCalcularSaldoContas() {
+    public void t08_deveCalcularSaldoContas() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
         .when()
              .get("/saldo")
         .then()
              .statusCode(200)
         .and()
-             .body("find{it.conta_id == 1381328}.saldo", is("300.00"))
+//             .body("find{it.conta_id == 1381328}.saldo", is("300.00"))
+             .body("find{it.conta_id == "+ CONTA_ID +"}.saldo", is("100.00"))
         ;
     }
 
     @Test
-    public void t10_deveRemoverMovimentacao() {
+    public void t09_deveRemoverMovimentacao() {
         given()
-             .header("Authorization", "JWT " + TOKEN)
+             .pathParam("id", MOV_ID)
         .when()
-             .delete("/transacoes/1293357")
+             .delete("/transacoes/{id}")
         .then()
              .statusCode(204)
+        ;
+    }
+
+    @Test
+    public void t10_naoDeveAcessarAPISemToken() {
+        FilterableRequestSpecification req = (FilterableRequestSpecification) requestSpecification;
+        req.removeHeader("Authorization");
+
+        given()
+        .when()
+             .get("/contas")
+        .then()
+             .statusCode(401)
         ;
     }
 
