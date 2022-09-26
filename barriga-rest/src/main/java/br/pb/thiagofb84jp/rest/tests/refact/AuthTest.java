@@ -46,5 +46,5 @@ public class AuthTest extends BaseTest {
              .statusCode(401)
         ;
     }
-    
+
 }
