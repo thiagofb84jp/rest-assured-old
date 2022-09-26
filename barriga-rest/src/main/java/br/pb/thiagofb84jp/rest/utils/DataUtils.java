@@ -6,14 +6,14 @@ import java.util.Date;
 
 public class DataUtils {
 
-    public static String getDataDiferencaDias(Integer qtdDays) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DATE, qtdDays);
+    public static String getDataDiferencaDias(Integer qtdDias) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, qtdDias);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String futureDate = dateFormat.format(new Date((calendar.getTimeInMillis())));
+        String dataFutura = dateFormat.format(new Date((cal.getTimeInMillis())));
 
-        return futureDate;
+        return dataFutura;
     }
 
 }

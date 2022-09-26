@@ -10,11 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.*;
-import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.requestSpecification;
 import static org.hamcrest.Matchers.is;
 
-public class ContasTest extends BaseTest {
+public class SaldoTest extends BaseTest {
 
     @BeforeClass
     public static void login() {
@@ -36,45 +34,16 @@ public class ContasTest extends BaseTest {
     }
 
     @Test
-    public void deveIncluirContaComSucesso() {
-        Faker faker = new Faker();
-        String nomeConta = "Conta "+ faker.funnyName().name();
+    public void deveCalcularSaldoContas() {
+        Integer CONTA_ID = getIdContaPeloNome("Conta para saldo");
 
         given()
-             .body("{\"nome\": \""+ nomeConta +"\"}")
         .when()
-             .post("/contas")
-        .then()
-             .statusCode(201)
-        ;
-    }
-
-    @Test
-    public void deveAlterarContaComSucesso() {
-        Integer CONTA_ID = getIdContaPeloNome("Conta para alterar");
-
-        given()
-             .body("{\"nome\": \"Conta alterada\"}")
-             .pathParam("id", CONTA_ID)
-        .when()
-             .put("/contas/{id}")
+             .get("/saldo")
         .then()
              .statusCode(200)
         .and()
-             .body("nome", is("Conta alterada"))
-        ;
-    }
-
-    @Test
-    public void naoDeveInserirContaMesmoNome() {
-        given()
-             .body("{\"nome\": \"Conta mesmo nome\"}")
-        .when()
-             .post("/contas")
-        .then()
-             .statusCode(400)
-        .and()
-             .body("error", is("Já existe uma conta com esse nome!"))
+             .body("find{it.conta_id == "+ CONTA_ID +"}.saldo", is("534.00"))
         ;
     }
 

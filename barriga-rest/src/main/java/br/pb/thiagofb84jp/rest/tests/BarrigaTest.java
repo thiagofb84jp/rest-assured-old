@@ -128,7 +128,7 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public void t06_deveInserirMovimentacaoComDataFutura() {
+    public void t06_naoDeveInserirMovimentacaoComDataFutura() {
         Movimentacao mov = getMovimentacaoValida();
         mov.setData_transacao(DataUtils.getDataDiferencaDias(2));
 
@@ -194,9 +194,6 @@ public class BarrigaTest extends BaseTest {
         ;
     }
 
-    /*
-    *   Generating mass of data
-     */
     private Movimentacao getMovimentacaoValida() {
         Movimentacao mov = new Movimentacao();
 
