@@ -12,29 +12,12 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static br.pb.thiagofb84jp.rest.utils.BarrigaUtils.getIdContaPeloNome;
+import static br.pb.thiagofb84jp.rest.utils.BarrigaUtils.getIdMovPelaDescricao;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
 public class MovimentacaoTest extends BaseTest {
-
-    @BeforeClass
-    public static void login() {
-        Map<String, String> login = new HashMap<>();
-        login.put("email", "thiago.ferreira@gmail.com");
-        login.put("senha", "abcd_123");
-
-        String TOKEN = given()
-                            .body(login)
-                       .when()
-                            .post("/signin")
-                       .then()
-                            .statusCode(200)
-                            .extract().path("token")
-        ;
-
-        requestSpecification.header("Authorization", "JWT " + TOKEN);
-        get("/reset").then().statusCode(200);
-    }
 
     @Test
     public void deveInserirMovimentacaoComSucesso() {
@@ -115,14 +98,6 @@ public class MovimentacaoTest extends BaseTest {
         .then()
              .statusCode(204)
         ;
-    }
-
-    public Integer getIdContaPeloNome(String nome) {
-        return RestAssured.get("/contas?nome=" + nome).then().extract().path("id[0]");
-    }
-
-    public Integer getIdMovPelaDescricao(String desc) {
-        return RestAssured.get("/transacoes?descricao=" + desc).then().extract().path("id[0]");
     }
 
     private Movimentacao getMovimentacaoValida() {

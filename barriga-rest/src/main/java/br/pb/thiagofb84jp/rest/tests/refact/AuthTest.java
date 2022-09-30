@@ -15,25 +15,6 @@ import static org.hamcrest.Matchers.is;
 
 public class AuthTest extends BaseTest {
 
-    @BeforeClass
-    public static void login() {
-        Map<String, String> login = new HashMap<>();
-        login.put("email", "thiago.ferreira@gmail.com");
-        login.put("senha", "abcd_123");
-
-        String TOKEN = given()
-                            .body(login)
-                       .when()
-                            .post("/signin")
-                       .then()
-                            .statusCode(200)
-                            .extract().path("token")
-        ;
-
-        requestSpecification.header("Authorization", "JWT " + TOKEN);
-        get("/reset").then().statusCode(200);
-    }
-
     @Test
     public void naoDeveAcessarAPISemToken() {
         FilterableRequestSpecification req = (FilterableRequestSpecification) requestSpecification;

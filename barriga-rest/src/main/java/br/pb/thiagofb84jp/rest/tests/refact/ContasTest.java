@@ -9,31 +9,13 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static br.pb.thiagofb84jp.rest.utils.BarrigaUtils.getIdContaPeloNome;
 import static io.restassured.RestAssured.*;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.requestSpecification;
 import static org.hamcrest.Matchers.is;
 
 public class ContasTest extends BaseTest {
-
-    @BeforeClass
-    public static void login() {
-        Map<String, String> login = new HashMap<>();
-        login.put("email", "thiago.ferreira@gmail.com");
-        login.put("senha", "abcd_123");
-
-        String TOKEN = given()
-                            .body(login)
-                       .when()
-                            .post("/signin")
-                       .then()
-                            .statusCode(200)
-                            .extract().path("token")
-        ;
-
-        requestSpecification.header("Authorization", "JWT " + TOKEN);
-        get("/reset").then().statusCode(200);
-    }
 
     @Test
     public void deveIncluirContaComSucesso() {
@@ -76,10 +58,6 @@ public class ContasTest extends BaseTest {
         .and()
              .body("error", is("Já existe uma conta com esse nome!"))
         ;
-    }
-
-    public Integer getIdContaPeloNome(String nome) {
-        return RestAssured.get("/contas?nome=" + nome).then().extract().path("id[0]");
     }
 
 }
