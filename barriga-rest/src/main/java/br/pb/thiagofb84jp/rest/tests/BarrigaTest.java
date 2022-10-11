@@ -100,6 +100,7 @@ public class BarrigaTest extends BaseTest {
                       .post("/transacoes")
                  .then()
                       .statusCode(201)
+                .and()
                       .extract().path("id")
         ;
     }
