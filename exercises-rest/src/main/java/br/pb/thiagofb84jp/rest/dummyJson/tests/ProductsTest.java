@@ -63,6 +63,17 @@ public class ProductsTest extends BaseTest {
     }
 
     @Test
+    public void deleteProduct() {
+        given()
+             .pathParam("id", 38)
+        .when()
+             .delete("/products/{id}")
+        .then()
+             .statusCode(200)
+        ;
+    }
+
+    @Test
     public void getSingleProduct() {
         given()
              .pathParam("id", 38)
@@ -81,11 +92,56 @@ public class ProductsTest extends BaseTest {
              .body("brand", is("Soft Cotton"))
              .body("category", is("tops"))
              .body("thumbnail", is("https://dummyjson.com/image/i/products/38/thumbnail.jpg"))
+             .body("images", hasSize(4))
              .body("images", hasItems("https://dummyjson.com/image/i/products/38/1.png",
                                          "https://dummyjson.com/image/i/products/38/2.jpg",
                                          "https://dummyjson.com/image/i/products/38/3.jpg",
                                          "https://dummyjson.com/image/i/products/38/4.jpg"))
-             .body("images", hasSize(4))
+        ;
+    }
+
+    @Test
+    public void getAllProducts() {
+        given()
+        .when()
+             .get("/products/")
+        .then()
+             .statusCode(200)
+        .and()
+             .body("$", hasKey("products"))
+             .body("total", is(100))
+             .body("skip", is(0))
+             .body("limit", is(30))
+        ;
+    }
+
+    @Test
+    public void getProductsOfCategory() {
+        given()
+             .pathParam("category", "home-decoration")
+        .when()
+             .get("/products/category/{category}")
+        .then()
+             .statusCode(200)
+        .and()
+             .body("$", hasKey("products"))
+             .body("total", is(5))
+             .body("skip", is(0))
+             .body("limit", is(5))
+        .and()
+             .body("products[0].category", is("home-decoration"))
+        ;
+    }
+
+    @Test
+    public void searchProducts() {
+        given()
+             .queryParams("q", "iPhone")
+             .log().all()
+        .when()
+             .get("/products/search/")
+        .then()
+             .statusCode(200)
         ;
     }
 
